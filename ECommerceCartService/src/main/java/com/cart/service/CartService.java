@@ -16,7 +16,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,7 +42,7 @@ public class CartService {
 
     @Transactional
     public CartResponse addToCart(String userId, Long productId, int quantity) {
-        if (quantity <= 0) quantity = 1;
+        final int adjustedQuantity = quantity <= 0 ? 1 : quantity;
         return withOptimisticRetry(userId, cart -> {
             ProductCatalogClient.ProductInfo p = productClient.getProductById(productId);
             if (p == null || !p.isAvailable() || p.getStock() <= 0) {
@@ -158,7 +157,7 @@ public class CartService {
 
     private void cacheCart(Cart cart) {
         String key = cacheKey(cart.getUserId());
-        redisTemplate.opsForValue().set(key, cart, 30, TimeUnit.MINUTES);
+        redisTemplate.opsForValue().set(key, cart, Duration.ofMinutes(30));
     }
 
     private void evictCache(String userId) {
